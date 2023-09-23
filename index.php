@@ -56,8 +56,8 @@ function crossfoot(int $int): string
 
 Kirby::plugin('ww/merx', [
     'options' => [
-        'successPage' => 'success',
-        'ordersPage' => 'orders',
+        'successPage' => 'shop/success',
+        'ordersPage' => 'shop/orders',
         'currency' => 'EUR',
         'currencySymbol' => '€',
         'production' => false,
@@ -159,6 +159,7 @@ Kirby::plugin('ww/merx', [
             $successPage = new Page([
                 'slug' => option('ww.merx.successPage'),
                 'template' => 'success',
+                'parent'=> kirby()->page('shop'),
             ]);
             site()->children()->add($successPage);
         },
