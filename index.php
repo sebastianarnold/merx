@@ -61,7 +61,7 @@ Kirby::plugin('ww/merx', [
         ],
     ],
     'options' => [
-        'successPage' => 'shop/success',
+        'successPage' => 'success',
         'ordersPage' => 'shop/orders',
         'currency' => 'EUR',
         'currencySymbol' => '€',
@@ -164,11 +164,11 @@ Kirby::plugin('ww/merx', [
         },
         'route:before' => function ($route, $path, $method) {
             $successPage = new Page([
-                'slug' => option('ww.merx.successPage'),
+                'slug' => 'success',
                 'template' => 'success',
                 'parent'=> kirby()->page('shop'),
             ]);
-            site()->children()->add($successPage);
+            site()->page('shop')->children()->add($successPage);
         },
         'ww.merx.stripe-hooks' => function (\Stripe\Event $stripeEvent) {
             switch ($stripeEvent->type) {
