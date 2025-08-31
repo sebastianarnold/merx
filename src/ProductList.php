@@ -20,6 +20,9 @@ use Kirby\Toolkit\A;
  */
 
 
+/**
+ * @extends Collection<array>
+ */
 class ProductList extends Collection
 {
     /**
@@ -28,7 +31,7 @@ class ProductList extends Collection
      * @param mixed $args `($data)` or `($id, $data)`.
      * @return $this
      */
-    public function append(...$args)
+    public function append(...$args): static
     {
         if (count($args) === 1) {
             if (!is_array($args[0])) {
@@ -61,7 +64,7 @@ class ProductList extends Collection
         }
         $key = strtolower($item['key']); // make it possible to use uppercase product keys
         $existingItem = $this->get($key);
-        $quantity = (float)($item['quantity'] ?? $existingItem['quantity']);
+        $quantity = (float)($item['quantity'] ?? $existingItem['quantity'] ?? 1);
         if ($existingItem) {
             if ($quantity <= 0) {
                 $this->remove($key);
@@ -86,6 +89,11 @@ class ProductList extends Collection
     public function __set(string $key, $value): void
     {
         $key = $value['key'] ?? $value['id'] ?? $key;
+
+        if ($this->caseSensitive !== true) {
+            $key = strtolower($key);
+        }
+
         if (!isset($value['id'])) {
             $value['id'] = $key;
         }
@@ -123,16 +131,16 @@ class ProductList extends Collection
                 $value['uid'] = $page->uid();
             }
             foreach (option('ww.merx.cart.fields', []) as $fieldName) {
-                $field = $page->{$fieldName}();
-                if (is_a($field, '\Kirby\Cms\Field') && $field->isNotEmpty()) {
-                    $value[$fieldName] = $field->toString();
-                } elseif (
-                    $field === null ||
-                    is_scalar($field) ||
-                    is_string($field) ||
-                    (is_object($field) && method_exists($field, '__toString'))
-                ) {
-                    $value[$fieldName] = (string)$field;
+                if (!array_key_exists($fieldName, $value)) {
+                    $field = $page->{$fieldName}();
+                    if (
+                        $field === null ||
+                        is_scalar($field) ||
+                        is_string($field) ||
+                        (is_object($field) && method_exists($field, '__toString'))
+                    ) {
+                        $value[$fieldName] = (string)$field;
+                    }
                 }
             }
         }
@@ -156,7 +164,7 @@ class ProductList extends Collection
 
         $value['key'] = $key;
 
-        $this->data[strtolower($key)] = $value;
+        $this->data[$key] = $value;
 
         if ($this->getTax() < 0) {
             throw new \Exception('The tax of the cart must not be negative');

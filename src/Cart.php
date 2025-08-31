@@ -4,10 +4,11 @@ namespace Wagnerwagner\Merx;
 
 use Wagnerwagner\Merx\ProductList;
 use Kirby\Exception\Exception;
+use stdClass;
 
 class Cart extends ProductList
 {
-    protected $sessionName = 'ww.merx.cartItems';
+    protected string $sessionName = 'ww.merx.cartItems';
 
 
     /**
@@ -21,7 +22,7 @@ class Cart extends ProductList
         if (count($data) === 0 && is_array($kirby->session()->get($this->sessionName))) {
             $data = $kirby->session()->get($this->sessionName);
         }
-        parent::__construct($data);
+        parent::__construct($data, true);
         kirby()->trigger('ww.merx.cart', ['cart' => $this]);
         $this->save();
     }
@@ -64,7 +65,7 @@ class Cart extends ProductList
             throw new Exception([
                 'key' => 'merx.cart.add',
                 'data' => [
-                    'id' => $cartItem['id'] ?? '',
+                    'id' => $cartItem['id'] ?? $args[0] ?? '',
                 ],
                 'details' => [
                     'message' => $ex->getMessage(),
@@ -84,12 +85,10 @@ class Cart extends ProductList
      * @param mixed $key the name of the key
      * @return $this
      */
-    public function remove($key)
+    public function remove($key): static
     {
-        if (isset($this->data[$key])) {
-            parent::remove($key);
-            $this->save();
-        }
+        parent::remove($key);
+        $this->save();
         return $this;
     }
 
@@ -159,7 +158,7 @@ class Cart extends ProductList
                 'httpCode' => 400,
             ]);
         }
-        return Payment::createStripePaymentIntent($this->getSum(), $params, $options);
+        return StripePayment::createStripePaymentIntent($this->getSum(), $params, $options);
     }
 
 
@@ -175,15 +174,20 @@ class Cart extends ProductList
 
     private function save(): self
     {
-        kirby()->session()->set($this->sessionName, $this->toArray());
+        if ($this->count() === 0) {
+            kirby()->session()->remove($this->sessionName);
+        } else {
+            kirby()->session()->set($this->sessionName, $this->toArray());
+        }
         return $this;
     }
 
-
     /**
-     * Returns an array in the format of PayPal’s purchase_unit_request.
+     * Could be used for ww.merx.paypal.purchaseUnits
      *
      * @since 1.3.0
+     *
+     * @return array Returns an array in the format of PayPal’s purchase_unit_request
      */
     public function payPalPurchaseUnits(): array
     {
@@ -218,12 +222,13 @@ class Cart extends ProductList
                     ],
                 ],
                 "items" => array_map(function ($cartItem) {
+                    $cartUnitAmount = new stdClass;
+                    $cartUnitAmount->value = number_format($cartItem['price'], 2, '.', '');
+                    $cartUnitAmount->currency_code =  option('ww.merx.currency');
+
                     return [
                         'name' => $cartItem['title'] ?? $cartItem['id'],
-                        'unit_amount' => [
-                            "value" => number_format($cartItem['price'], 2, '.', ''),
-                            "currency_code" => option('ww.merx.currency'),
-                        ],
+                        'unit_amount' => $cartUnitAmount,
                         'quantity' => $cartItem['quantity'],
                     ];
                 }, $items),

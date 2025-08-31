@@ -1,6 +1,5 @@
 <?php
 
-use Kirby\Cms\Field;
 use Kirby\Cms\Page;
 use Kirby\Form\Form;
 use Wagnerwagner\Merx\Merx;
@@ -23,6 +22,7 @@ abstract class OrderPageAbstract extends Page
 
         $fields = array_change_key_case($this->blueprint()->fields());
         // add model to each field
+        $this->kirby()->setCurrentLanguage($this->kirby()->defaultLanguage()->code());
         $fields = array_map(function ($field) {
             $field['model'] = $this;
             return $field;
