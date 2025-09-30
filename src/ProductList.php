@@ -62,7 +62,7 @@ class ProductList extends Collection
         if (!array_key_exists('key', $item)) {
             throw new \Exception('Array must have a ‘key’ or ‘id’');
         }
-        $key = strtolower($item['key']); // make it possible to use uppercase product keys
+        $key = $item['key'];
         $existingItem = $this->get($key);
         $quantity = (float)($item['quantity'] ?? $existingItem['quantity'] ?? 1);
         if ($existingItem) {
